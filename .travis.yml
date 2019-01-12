@@ -1,0 +1,15 @@
+language: rust
+rust:
+  - beta
+script:
+  - cargo build --verbose --all
+  - cargo test --verbose --all --features ci_tests
+matrix:
+  fast_finish: true
+  include:
+  - rust: stable
+    script:
+    - cargo build --verbose --all
+    - cargo test --verbose --all --features ci_tests
+    - rustup component add rustfmt-preview
+    - cargo fmt --all -- --check
