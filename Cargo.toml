@@ -1,0 +1,12 @@
+[package]
+name = "ff4"
+version = "0.1.0"
+authors = ["Erik Gilling <konkers@konkers.net>"]
+edition = "2018"
+
+[features]
+ci_tests = []
+
+[dependencies]
+lazy_static = "1.2.0"
+simple-error = "0.1"
