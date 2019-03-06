@@ -1,3 +1,6 @@
+pub mod ai;
+pub mod script;
+
 use super::rom_map;
 use super::string;
 

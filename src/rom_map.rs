@@ -20,3 +20,18 @@ pub const MONSTER_DROP_TABLE: usize = 0x71e00;
 pub const MONSTER_DROP_TABLE_END: usize = 0x71f00;
 
 pub const MONSTER_INFO_OFFSET: usize = 0x72860 - 0xa860;
+
+pub const ATTACK_GROUP_START: usize = 0x76030;
+pub const ATTACK_GROUP_END: usize = 0x765FF;
+
+pub const AI_CONDITION_SET_TABLE_START: usize = 0x76600;
+pub const AI_CONDITION_SET_TABLE_END: usize = 0x76700;
+
+pub const AI_CONDITION_TABLE_START: usize = 0x76700;
+pub const AI_CONDITION_TABLE_END: usize = 0x76900;
+
+pub const AI_EARTH_ATTACK_SCRIPTS_START: usize = 0x76900;
+pub const AI_EARTH_ATTACK_SCRIPTS_END: usize = 0x771ff;
+
+pub const AI_MOON_ATTACK_SCRIPTS_START: usize = 0x736c0;
+pub const AI_MOON_ATTACK_SCRIPTS_END: usize = 0x73acf;
