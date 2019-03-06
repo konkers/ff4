@@ -2,6 +2,7 @@ use super::rom_map;
 use super::string;
 
 use std::error::Error;
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Stats {
     base: u8,
@@ -391,10 +392,7 @@ fn parse_monster(
 
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
-    use std::io::Read;
-    use std::path::PathBuf;
-
+    use super::super::test_utils;
     use super::*;
 
     fn blank_stat_table() -> Vec<Stats> {
@@ -615,13 +613,7 @@ mod tests {
     #[cfg_attr(feature = "ci_tests", ignore)]
     #[test]
     fn parse_rom_test() {
-        let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        p.push("ff2us.smc");
-
-        let mut f = File::open(p).unwrap();
-        let mut data = Vec::new();
-        f.read_to_end(&mut data).unwrap();
-
+        let data = test_utils::load_rom().unwrap();
         let ff4 = parse_rom(&data).unwrap();
 
         assert_eq!(
