@@ -9,4 +9,6 @@ ci_tests = []
 
 [dependencies]
 lazy_static = "1.2.0"
+nom = "4.1"
 simple-error = "0.1"
+
