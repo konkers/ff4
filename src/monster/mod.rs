@@ -6,20 +6,20 @@ use super::string;
 
 use std::error::Error;
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct Stats {
     base: u8,
     mult: u8,
     rate: u8,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct Speed {
     min: u8,
     max: u8,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum Status {
     ImmuneToElements,
     AbsorbsElements,
@@ -47,7 +47,7 @@ pub enum Status {
     D,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum Weakness {
     Damage4x,
     Floating,
@@ -59,7 +59,7 @@ pub enum Weakness {
     Fire,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum CreatureType {
     Undead,
     Mage,
@@ -71,7 +71,7 @@ pub enum CreatureType {
     Dragon,
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct DropTable {
     common: u8,
     uncommon: u8,
@@ -79,7 +79,7 @@ pub struct DropTable {
     very_rare: u8,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Serialize)]
 pub struct Monster {
     index: usize,
     is_boss: bool,
@@ -100,7 +100,7 @@ pub struct Monster {
     reflex_attack_seq: u8,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Serialize)]
 pub struct Ff4 {
     pub monsters: Vec<Monster>,
     pub name_table: Vec<String>,
@@ -110,6 +110,7 @@ pub struct Ff4 {
     pub stat_table: Vec<Stats>,
     pub speed_table: Vec<Speed>,
     pub drop_tables: Vec<DropTable>,
+    pub ai: ai::Ai,
 }
 
 pub fn parse_rom(data: &Vec<u8>) -> Result<Ff4, Box<Error>> {
@@ -162,6 +163,8 @@ pub fn parse_rom(data: &Vec<u8>) -> Result<Ff4, Box<Error>> {
         monsters.push(monster);
     }
 
+    let ai = ai::parse(&data)?;
+
     Ok(Ff4 {
         monsters: monsters,
         name_table: name_table,
@@ -171,6 +174,7 @@ pub fn parse_rom(data: &Vec<u8>) -> Result<Ff4, Box<Error>> {
         stat_table: stat_table,
         speed_table: speed_table,
         drop_tables: drop_table,
+        ai: ai,
     })
 }
 
