@@ -8,15 +8,15 @@ use std::error::Error;
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct Stats {
-    base: u8,
-    mult: u8,
-    rate: u8,
+    pub base: u8,
+    pub mult: u8,
+    pub rate: u8,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct Speed {
-    min: u8,
-    max: u8,
+    pub min: u8,
+    pub max: u8,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -73,31 +73,31 @@ pub enum CreatureType {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct DropTable {
-    common: u8,
-    uncommon: u8,
-    rare: u8,
-    very_rare: u8,
+    pub common: u8,
+    pub uncommon: u8,
+    pub rare: u8,
+    pub very_rare: u8,
 }
 
-#[derive(Debug, Default, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct Monster {
-    index: usize,
-    is_boss: bool,
-    level: u8,
-    max_hp: u16,
-    physical_attack_index: u8,
-    physical_defense_index: u8,
-    magical_defense_index: u8,
-    speed_index: u8,
-    drop_rate: u8,
-    drop_table_index: u8,
-    attack_seq_group: u8,
-    attack_statuses: Vec<Status>,
-    defense_statuses: Vec<Status>,
-    weaknesses: Vec<Weakness>,
-    spell_power: u8,
-    creature_types: Vec<CreatureType>,
-    reflex_attack_seq: u8,
+    pub index: usize,
+    pub is_boss: bool,
+    pub level: u8,
+    pub max_hp: u16,
+    pub physical_attack_index: u8,
+    pub physical_defense_index: u8,
+    pub magical_defense_index: u8,
+    pub speed_index: u8,
+    pub drop_rate: u8,
+    pub drop_table_index: u8,
+    pub attack_seq_group: u8,
+    pub attack_statuses: Vec<Status>,
+    pub defense_statuses: Vec<Status>,
+    pub weaknesses: Vec<Weakness>,
+    pub spell_power: u8,
+    pub creature_types: Vec<CreatureType>,
+    pub reflex_attack_seq: u8,
 }
 
 #[derive(Debug, Serialize)]

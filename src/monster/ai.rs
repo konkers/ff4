@@ -9,33 +9,33 @@ use super::script;
 // table.  The table is a list of entries.  Each entry is Terminated by 0xff.
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Group {
-    entries: Vec<GroupEntry>,
+    pub entries: Vec<GroupEntry>,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct GroupEntry {
-    condition_set_index: u8,
-    action_index: u8,
+    pub condition_set_index: u8,
+    pub action_index: u8,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct ConditionSet {
-    condition_indexes: Vec<u8>,
+    pub condition_indexes: Vec<u8>,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Condition {
-    op: u8,
-    args: [u8; 3],
+    pub op: u8,
+    pub args: [u8; 3],
 }
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Ai {
-    condition_sets: Vec<ConditionSet>,
-    conditions: Vec<Condition>,
-    groups: Vec<Group>,
-    earth_scripts: Vec<script::Script>,
-    moon_scripts: Vec<script::Script>,
+    pub condition_sets: Vec<ConditionSet>,
+    pub conditions: Vec<Condition>,
+    pub groups: Vec<Group>,
+    pub earth_scripts: Vec<script::Script>,
+    pub moon_scripts: Vec<script::Script>,
 }
 
 named!(parse_groups<CompleteByteSlice, Vec<Group>>,
