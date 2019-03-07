@@ -3,36 +3,39 @@ use simple_error::SimpleError;
 use std::error::Error;
 
 use super::super::rom_map;
+use super::script;
 
 // Each monster has an attack group ID.  This indexes into the attack group
 // table.  The table is a list of entries.  Each entry is Terminated by 0xff.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Group {
     entries: Vec<GroupEntry>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct GroupEntry {
     condition_set_index: u8,
     action_index: u8,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct ConditionSet {
     condition_indexes: Vec<u8>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Condition {
     op: u8,
     args: [u8; 3],
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Ai {
     condition_sets: Vec<ConditionSet>,
     conditions: Vec<Condition>,
     groups: Vec<Group>,
+    earth_scripts: Vec<script::Script>,
+    moon_scripts: Vec<script::Script>,
 }
 
 named!(parse_groups<CompleteByteSlice, Vec<Group>>,
@@ -90,10 +93,19 @@ pub fn parse(data: &[u8]) -> Result<Ai, Box<Error>> {
     .map_err(|e| SimpleError::new(format!("Can't parse conditions: {}", e)))?
     .1;
 
+    let earth_scripts = script::parse(
+        &data[rom_map::AI_EARTH_ATTACK_SCRIPTS_START..=rom_map::AI_EARTH_ATTACK_SCRIPTS_END],
+    )?;
+    let moon_scripts = script::parse(
+        &data[rom_map::AI_MOON_ATTACK_SCRIPTS_START..=rom_map::AI_MOON_ATTACK_SCRIPTS_END],
+    )?;
+
     Ok(Ai {
         groups: groups,
         condition_sets: condition_sets,
         conditions: conditions,
+        earth_scripts: earth_scripts,
+        moon_scripts: moon_scripts,
     })
 }
 

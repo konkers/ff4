@@ -3,7 +3,7 @@ use nom::{ErrorKind, IResult, Needed, Slice};
 
 use std::error::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum Action {
     // 0x00-0x30
     // 0x31-0x5e
@@ -98,7 +98,7 @@ pub enum Action {
     Wait,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Script {
     pub actions: Vec<Action>,
 }
