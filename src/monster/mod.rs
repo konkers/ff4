@@ -78,18 +78,16 @@ pub struct DropTable {
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Monster {
-    name: String,
-    xp: u16,
-    gp: u16,
+    index: usize,
     is_boss: bool,
     level: u8,
     max_hp: u16,
-    physical_attack: Stats,
-    physical_defense: Stats,
-    magical_defense: Stats,
-    speed: Speed,
+    physical_attack_index: u8,
+    physical_defense_index: u8,
+    magical_defense_index: u8,
+    speed_index: u8,
     drop_rate: u8,
-    drop_table: DropTable,
+    drop_table_index: u8,
     attack_seq_group: u8,
     attack_statuses: Vec<Status>,
     defense_statuses: Vec<Status>,
@@ -101,7 +99,14 @@ pub struct Monster {
 
 #[derive(Debug, Default)]
 pub struct Ff4 {
-    monsters: Vec<Monster>,
+    pub monsters: Vec<Monster>,
+    pub name_table: Vec<String>,
+    pub gp_table: Vec<u16>,
+    pub xp_table: Vec<u16>,
+    pub monster_offset_table: Vec<u16>,
+    pub stat_table: Vec<Stats>,
+    pub speed_table: Vec<Speed>,
+    pub drop_tables: Vec<DropTable>,
 }
 
 pub fn parse_rom(data: &Vec<u8>) -> Result<Ff4, Box<Error>> {
@@ -145,18 +150,25 @@ pub fn parse_rom(data: &Vec<u8>) -> Result<Ff4, Box<Error>> {
         drop_table.push(parse_drop_table(&data[addr..]));
     }
 
-    let mut ff4 = Ff4::default();
+    let mut monsters = Vec::new();
     for (index, &offset) in monster_offset_table.iter().enumerate() {
         let addr = rom_map::MONSTER_INFO_OFFSET + (offset as usize);
-        let mut monster = parse_monster(&data[addr..], &stat_table, &speed_table, &drop_table);
-        monster.name = name_table[index].clone();
-        monster.gp = gp_table[index].clone();
-        monster.xp = xp_table[index].clone();
+        let mut monster = parse_monster(&data[addr..]);
+        monster.index = index;
 
-        ff4.monsters.push(monster);
+        monsters.push(monster);
     }
 
-    Ok(ff4)
+    Ok(Ff4 {
+        monsters: monsters,
+        name_table: name_table,
+        gp_table: gp_table,
+        xp_table: xp_table,
+        monster_offset_table: monster_offset_table,
+        stat_table: stat_table,
+        speed_table: speed_table,
+        drop_tables: drop_table,
+    })
 }
 
 fn parse_u16(data: &[u8]) -> u16 {
@@ -325,12 +337,7 @@ fn parse_drop_table(data: &[u8]) -> DropTable {
     }
 }
 
-fn parse_monster(
-    data: &[u8],
-    attack_table: &Vec<Stats>,
-    speed_table: &Vec<Speed>,
-    drop_table: &Vec<DropTable>,
-) -> Monster {
+fn parse_monster(data: &[u8]) -> Monster {
     let mut monster = Monster::default();
 
     if (data[0] & 0x80) == 0x80 {
@@ -339,10 +346,10 @@ fn parse_monster(
     monster.level = data[0] & 0x7f;
     monster.max_hp = parse_u16(&data[1..]);
 
-    monster.physical_attack = attack_table[data[3] as usize].clone();
-    monster.physical_defense = attack_table[data[4] as usize].clone();
-    monster.magical_defense = attack_table[data[5] as usize].clone();
-    monster.speed = speed_table[(data[6] & 0x3f) as usize].clone();
+    monster.physical_attack_index = data[3];
+    monster.physical_defense_index = data[4];
+    monster.magical_defense_index = data[5];
+    monster.speed_index = data[6] & 0x3f;
 
     monster.drop_rate = match data[7] >> 6 {
         0b00 => 0,
@@ -351,7 +358,7 @@ fn parse_monster(
         _ => 100,
     };
     if monster.drop_rate > 0 {
-        monster.drop_table = drop_table[(data[7] & 0x3f) as usize].clone();
+        monster.drop_table_index = data[7] & 0x3f;
     }
 
     monster.attack_seq_group = data[8];
@@ -395,39 +402,6 @@ mod tests {
     use super::super::test_utils;
     use super::*;
 
-    fn blank_stat_table() -> Vec<Stats> {
-        let size = 0xe0;
-        let mut table = Vec::with_capacity(0x40);
-
-        for _ in 0..size {
-            table.push(Stats::default());
-        }
-
-        table
-    }
-
-    fn blank_speed_table() -> Vec<Speed> {
-        let size = 0x40;
-        let mut table = Vec::with_capacity(0x40);
-
-        for _ in 0..size {
-            table.push(Speed::default());
-        }
-
-        table
-    }
-
-    fn blank_drop_table() -> Vec<DropTable> {
-        let size = 0x40;
-        let mut table = Vec::with_capacity(0x40);
-
-        for _ in 0..size {
-            table.push(DropTable::default());
-        }
-
-        table
-    }
-
     #[test]
     fn parse_u16_test() {
         assert_eq!(0xaa55, parse_u16(&[0x55, 0xaa]));
@@ -468,87 +442,18 @@ mod tests {
 
     #[test]
     fn parse_monster_test() {
-        let mut stat_table = blank_stat_table();
-        stat_table[0x01] = Stats {
-            mult: 0x1,
-            rate: 0x4b,
-            base: 0x13,
-        };
-        stat_table[0x16] = Stats {
-            mult: 0x3,
-            rate: 0x63,
-            base: 0x2c,
-        };
-        stat_table[0x60] = Stats {
-            mult: 0x0,
-            rate: 0x0,
-            base: 0x0,
-        };
-        stat_table[0x6B] = Stats {
-            mult: 0x01,
-            rate: 0x3c,
-            base: 0x01,
-        };
-        stat_table[0xA0] = Stats {
-            mult: 0x0,
-            rate: 0x0,
-            base: 0x0,
-        };
-        stat_table[0xC0] = Stats {
-            mult: 0x06,
-            rate: 0x28,
-            base: 0x16,
-        };
-
-        let mut speed_table = blank_speed_table();
-        speed_table[0x02] = Speed {
-            min: 0x01,
-            max: 0x02,
-        };
-        speed_table[0x32] = Speed {
-            min: 0x09,
-            max: 0x09,
-        };
-
-        let mut drop_table = blank_drop_table();
-        drop_table[0x38] = DropTable {
-            common: 0xce,
-            uncommon: 0xe2,
-            rare: 0xcf,
-            very_rare: 0xe7,
-        };
-
         assert_eq!(
             Monster {
-                name: "".to_string(),
-                xp: 0,
-                gp: 0,
+                index: 0,
                 is_boss: false,
                 level: 3,
                 max_hp: 6,
-                physical_attack: Stats {
-                    base: 19,
-                    mult: 1,
-                    rate: 75
-                },
-                physical_defense: Stats {
-                    base: 0,
-                    mult: 0,
-                    rate: 0
-                },
-                magical_defense: Stats {
-                    base: 0,
-                    mult: 0,
-                    rate: 0
-                },
-                speed: Speed { min: 1, max: 2 },
+                physical_attack_index: 0x01,
+                physical_defense_index: 0x60,
+                magical_defense_index: 0xa0,
+                speed_index: 0x02,
                 drop_rate: 5,
-                drop_table: DropTable {
-                    common: 0xce,
-                    uncommon: 0xe2,
-                    rare: 0xcf,
-                    very_rare: 0xe7,
-                },
+                drop_table_index: 0x38,
                 attack_seq_group: 0,
                 attack_statuses: vec!(),
                 defense_statuses: vec!(),
@@ -557,39 +462,20 @@ mod tests {
                 creature_types: vec!(),
                 reflex_attack_seq: 0x0,
             },
-            parse_monster(
-                &[0x03, 0x06, 0x00, 0x01, 0x60, 0xa0, 0x02, 0x78, 0x00, 0x00],
-                &stat_table,
-                &speed_table,
-                &drop_table
-            )
+            parse_monster(&[0x03, 0x06, 0x00, 0x01, 0x60, 0xa0, 0x02, 0x78, 0x00, 0x00],)
         );
         assert_eq!(
             Monster {
-                name: "".to_string(),
-                xp: 0,
-                gp: 0,
+                index: 0,
                 is_boss: true,
                 level: 15,
                 max_hp: 3000,
-                physical_attack: Stats {
-                    base: 44,
-                    mult: 3,
-                    rate: 99
-                },
-                physical_defense: Stats {
-                    base: 1,
-                    mult: 1,
-                    rate: 60
-                },
-                magical_defense: Stats {
-                    base: 22,
-                    mult: 6,
-                    rate: 40
-                },
-                speed: Speed { min: 9, max: 9 },
+                physical_attack_index: 0x16,
+                physical_defense_index: 0x6b,
+                magical_defense_index: 0xc0,
+                speed_index: 0x32,
                 drop_rate: 0,
-                drop_table: DropTable::default(),
+                drop_table_index: 0,
                 attack_seq_group: 149,
                 attack_statuses: vec!(Status::Poison),
                 defense_statuses: vec!(Status::AbsorbsElements, Status::Ice),
@@ -598,15 +484,10 @@ mod tests {
                 creature_types: vec!(CreatureType::Undead),
                 reflex_attack_seq: 0,
             },
-            parse_monster(
-                &[
-                    0x8F, 0xB8, 0x0B, 0x16, 0x6B, 0xC0, 0x32, 0x00, 0x95, 0xF8, 0x00, 0x01, 0x00,
-                    0x42, 0x00, 0x00, 0x31, 0x1F, 0x80
-                ],
-                &stat_table,
-                &speed_table,
-                &drop_table
-            )
+            parse_monster(&[
+                0x8F, 0xB8, 0x0B, 0x16, 0x6B, 0xC0, 0x32, 0x00, 0x95, 0xF8, 0x00, 0x01, 0x00, 0x42,
+                0x00, 0x00, 0x31, 0x1F, 0x80
+            ],)
         );
     }
 
@@ -616,37 +497,19 @@ mod tests {
         let data = test_utils::load_rom().unwrap();
         let ff4 = parse_rom(&data).unwrap();
 
+        let milon = &ff4.monsters[0xa5];
         assert_eq!(
             Monster {
-                name: "Milon   ".to_string(),
-                xp: 3200,
-                gp: 2500,
+                index: 0xa5,
                 is_boss: true,
                 level: 15,
                 max_hp: 3100,
-                physical_attack: Stats {
-                    base: 19,
-                    mult: 1,
-                    rate: 75
-                },
-                physical_defense: Stats {
-                    base: 2,
-                    mult: 1,
-                    rate: 35
-                },
-                magical_defense: Stats {
-                    base: 0,
-                    mult: 0,
-                    rate: 0
-                },
-                speed: Speed { min: 8, max: 8 },
+                physical_attack_index: 0x1,
+                physical_defense_index: 0x66,
+                magical_defense_index: 0xa0,
+                speed_index: 0x33,
                 drop_rate: 0,
-                drop_table: DropTable {
-                    common: 0,
-                    uncommon: 0,
-                    rare: 0,
-                    very_rare: 0
-                },
+                drop_table_index: 0x0,
                 attack_seq_group: 145,
                 attack_statuses: vec!(),
                 defense_statuses: vec!(),
@@ -655,35 +518,53 @@ mod tests {
                 creature_types: vec!(),
                 reflex_attack_seq: 146
             },
-            ff4.monsters[0xa5]
+            *milon
+        );
+        assert_eq!("Milon   ".to_string(), ff4.name_table[milon.index]);
+        assert_eq!(3200, ff4.xp_table[milon.index]);
+        assert_eq!(2500, ff4.gp_table[milon.index]);
+        assert_eq!(
+            Stats {
+                base: 19,
+                mult: 1,
+                rate: 75,
+            },
+            ff4.stat_table[milon.physical_attack_index as usize]
+        );
+        assert_eq!(
+            Stats {
+                base: 2,
+                mult: 1,
+                rate: 35,
+            },
+            ff4.stat_table[milon.physical_defense_index as usize]
+        );
+        assert_eq!(
+            Stats {
+                base: 0,
+                mult: 0,
+                rate: 0,
+            },
+            ff4.stat_table[milon.magical_defense_index as usize]
+        );
+        assert_eq!(
+            Speed { min: 8, max: 8 },
+            ff4.speed_table[milon.speed_index as usize]
         );
 
+        let milon_z = &ff4.monsters[0xa6];
         assert_eq!(
             Monster {
-                name: "Milon Z.".to_string(),
-                xp: 4000,
-                gp: 3000,
+                index: 0xa6,
                 is_boss: true,
                 level: 15,
                 max_hp: 3000,
-                physical_attack: Stats {
-                    base: 44,
-                    mult: 3,
-                    rate: 99
-                },
-                physical_defense: Stats {
-                    base: 1,
-                    mult: 1,
-                    rate: 60
-                },
-                magical_defense: Stats {
-                    base: 22,
-                    mult: 6,
-                    rate: 40
-                },
-                speed: Speed { min: 9, max: 9 },
+                physical_attack_index: 0x16,
+                physical_defense_index: 0x6b,
+                magical_defense_index: 0xc0,
+                speed_index: 0x32,
                 drop_rate: 0,
-                drop_table: DropTable::default(),
+                drop_table_index: 0x0,
                 attack_seq_group: 149,
                 attack_statuses: vec!(Status::Poison),
                 defense_statuses: vec!(Status::AbsorbsElements, Status::Ice),
@@ -692,7 +573,38 @@ mod tests {
                 creature_types: vec!(CreatureType::Undead),
                 reflex_attack_seq: 0,
             },
-            ff4.monsters[0xa6]
+            *milon_z
+        );
+        assert_eq!("Milon Z.".to_string(), ff4.name_table[milon_z.index]);
+        assert_eq!(4000, ff4.xp_table[milon_z.index]);
+        assert_eq!(3000, ff4.gp_table[milon_z.index]);
+        assert_eq!(
+            Stats {
+                base: 44,
+                mult: 3,
+                rate: 99,
+            },
+            ff4.stat_table[milon_z.physical_attack_index as usize]
+        );
+        assert_eq!(
+            Stats {
+                base: 1,
+                mult: 1,
+                rate: 60,
+            },
+            ff4.stat_table[milon_z.physical_defense_index as usize]
+        );
+        assert_eq!(
+            Stats {
+                base: 22,
+                mult: 6,
+                rate: 40,
+            },
+            ff4.stat_table[milon_z.magical_defense_index as usize]
+        );
+        assert_eq!(
+            Speed { min: 9, max: 9 },
+            ff4.speed_table[milon_z.speed_index as usize]
         );
     }
 }
