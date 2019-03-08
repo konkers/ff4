@@ -22,22 +22,24 @@ pub struct CombinedMonster {
     pub drop_table: DropTable,
 }
 
-fn dump_monsters(ff4: &ff4::monster::Ff4) {
+fn dump_monsters(ff4: &ff4::Ff4) {
     let dir = format!("out/monster");
     create_dir_all(&dir).unwrap();
-    for i in 0..ff4.monsters.len() {
-        let name = ff4.name_table[i].trim();
+    let monster_data = &ff4.monster_data;
+    for i in 0..monster_data.monsters.len() {
+        let name = monster_data.name_table[i].trim();
 
-        let m = &ff4.monsters[i];
+        let m = &monster_data.monsters[i];
+        let stat_table = &monster_data.stat_table;
         let monster = CombinedMonster {
-            monster: ff4.monsters[i].clone(),
-            xp: ff4.xp_table[i],
-            gp: ff4.gp_table[i],
-            physical_attack: ff4.stat_table[m.physical_attack_index as usize].clone(),
-            physical_defense: ff4.stat_table[m.physical_defense_index as usize].clone(),
-            magical_defense: ff4.stat_table[m.magical_defense_index as usize].clone(),
-            speed: ff4.speed_table[m.speed_index as usize].clone(),
-            drop_table: ff4.drop_tables[m.drop_table_index as usize].clone(),
+            monster: m.clone(),
+            xp: monster_data.xp_table[i],
+            gp: monster_data.gp_table[i],
+            physical_attack: stat_table[m.physical_attack_index as usize].clone(),
+            physical_defense: stat_table[m.physical_defense_index as usize].clone(),
+            magical_defense: stat_table[m.magical_defense_index as usize].clone(),
+            speed: monster_data.speed_table[m.speed_index as usize].clone(),
+            drop_table: monster_data.drop_tables[m.drop_table_index as usize].clone(),
         };
         let j = serde_json::to_string_pretty(&monster).unwrap();
         write(format!("{}/{}.json", &dir, name), &j).unwrap();
@@ -46,7 +48,7 @@ fn dump_monsters(ff4: &ff4::monster::Ff4) {
 
 fn main() -> Result<(), Box<Error>> {
     let rom_data = test_utils::load_rom()?;
-    let ff4 = ff4::monster::parse_rom(&rom_data)?;
+    let ff4 = ff4::parse_rom(&rom_data)?;
 
     dump_monsters(&ff4);
 
