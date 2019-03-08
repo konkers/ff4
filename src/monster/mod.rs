@@ -101,7 +101,7 @@ pub struct Monster {
 }
 
 #[derive(Debug, Serialize)]
-pub struct Ff4 {
+pub struct MonsterData {
     pub monsters: Vec<Monster>,
     pub name_table: Vec<String>,
     pub gp_table: Vec<u16>,
@@ -112,7 +112,7 @@ pub struct Ff4 {
     pub ai: ai::Ai,
 }
 
-pub fn parse_rom(data: &Vec<u8>) -> Result<Ff4, Box<Error>> {
+pub fn parse(data: &Vec<u8>) -> Result<MonsterData, Box<Error>> {
     let mut name_table = Vec::new();
     let gp_table: Vec<u16>;
     let xp_table: Vec<u16>;
@@ -164,7 +164,7 @@ pub fn parse_rom(data: &Vec<u8>) -> Result<Ff4, Box<Error>> {
 
     let ai = ai::parse(&data)?;
 
-    Ok(Ff4 {
+    Ok(MonsterData {
         monsters: monsters,
         name_table: name_table,
         gp_table: gp_table,
@@ -500,7 +500,7 @@ mod tests {
     #[test]
     fn parse_rom_test() {
         let data = test_utils::load_rom().unwrap();
-        let ff4 = parse_rom(&data).unwrap();
+        let ff4 = parse(&data).unwrap();
 
         let milon = &ff4.monsters[0xa5];
         assert_eq!(
