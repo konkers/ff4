@@ -21,8 +21,8 @@ pub struct Ff4 {
     pub monster_data: monster::MonsterData,
 }
 
-pub fn parse_rom(data: &Vec<u8>) -> Result<Ff4, Box<Error>> {
-    let monster_data = monster::parse(&data)?;
+pub fn parse_rom(data: &[u8]) -> Result<Ff4, Box<Error>> {
+    let monster_data = monster::parse(data)?;
 
     Ok(Ff4 {
         monster_data: monster_data,
