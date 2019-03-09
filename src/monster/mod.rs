@@ -112,7 +112,7 @@ pub struct MonsterData {
     pub ai: ai::Ai,
 }
 
-pub fn parse(data: &Vec<u8>) -> Result<MonsterData, Box<Error>> {
+pub fn parse(data: &[u8]) -> Result<MonsterData, Box<Error>> {
     let mut name_table = Vec::new();
     let gp_table: Vec<u16>;
     let xp_table: Vec<u16>;
@@ -162,7 +162,7 @@ pub fn parse(data: &Vec<u8>) -> Result<MonsterData, Box<Error>> {
         monsters.push(monster);
     }
 
-    let ai = ai::parse(&data)?;
+    let ai = ai::parse(data)?;
 
     Ok(MonsterData {
         monsters: monsters,
