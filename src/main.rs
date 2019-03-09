@@ -20,6 +20,7 @@ pub struct CombinedMonster {
     pub magical_defense: Stats,
     pub speed: Speed,
     pub drop_table: DropTable,
+    pub ai: String,
 }
 
 fn dump_monsters(ff4: &ff4::Ff4) {
@@ -28,9 +29,18 @@ fn dump_monsters(ff4: &ff4::Ff4) {
     let monster_data = &ff4.monster_data;
     for i in 0..monster_data.monsters.len() {
         let name = monster_data.name_table[i].trim();
+        println!("{}", name);
 
         let m = &monster_data.monsters[i];
         let stat_table = &monster_data.stat_table;
+
+        let seq = m.attack_seq_group as usize;
+        let ai = if monster_data.ai.groups.len() > seq {
+           ff4.render_ai(&monster_data.ai.groups[seq])
+        } else {
+            "unknown".to_string()
+        };
+
         let monster = CombinedMonster {
             monster: m.clone(),
             xp: monster_data.xp_table[i],
@@ -40,9 +50,10 @@ fn dump_monsters(ff4: &ff4::Ff4) {
             magical_defense: stat_table[m.magical_defense_index as usize].clone(),
             speed: monster_data.speed_table[m.speed_index as usize].clone(),
             drop_table: monster_data.drop_tables[m.drop_table_index as usize].clone(),
+            ai: ai,
         };
         let j = serde_json::to_string_pretty(&monster).unwrap();
-        write(format!("{}/{}.json", &dir, name), &j).unwrap();
+        write(format!("{}/{:02x}-{}.json", &dir, i, name), &j).unwrap();
     }
 }
 
